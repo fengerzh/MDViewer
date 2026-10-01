@@ -1,14 +1,3 @@
----
-AIGC:
-    Label: "1"
-    ContentProducer: 001191440300708461136T1XGW3
-    ProduceID: 23869ad2059d2f9bd8217a2b1df9bfc2_7c8ee160bd4a11f1a526525400cd780f
-    ReservedCode1: m7XRxGDACv/uxdUE9T1PuWhvoMhfhHr7VpeOvaAgrJDvWu+WWOtVF2z50WHshDGdk1yicg7He5nDbjrFV1QYyf7Z+KnX1ZzCeJLV54UtpDZC3uAJC30V9gih4I0XwiI4lYxBDa9TuTYf9mNNYgtjlJ+vnTy1PEagYWBxkhNEm2Mnn9otKiReVleTFZI=
-    ContentPropagator: 001191440300708461136T1XGW3
-    PropagateID: 23869ad2059d2f9bd8217a2b1df9bfc2_7c8ee160bd4a11f1a526525400cd780f
-    ReservedCode2: m7XRxGDACv/uxdUE9T1PuWhvoMhfhHr7VpeOvaAgrJDvWu+WWOtVF2z50WHshDGdk1yicg7He5nDbjrFV1QYyf7Z+KnX1ZzCeJLV54UtpDZC3uAJC30V9gih4I0XwiI4lYxBDa9TuTYf9mNNYgtjlJ+vnTy1PEagYWBxkhNEm2Mnn9otKiReVleTFZI=
----
-
 # MDViewer
 
 极简、纯净、毫秒级响应的 macOS Markdown 纯查看器。
