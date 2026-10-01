@@ -1,0 +1,12 @@
+{
+  "name": "mdviewer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "极简 Markdown 纯查看器",
+  "scripts": {
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}

@@ -1,0 +1,99 @@
+:root {
+  color-scheme: light dark;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  line-height: 1.7;
+  font-size: 16px;
+}
+
+#content {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 32px 40px 64px;
+  overflow-wrap: break-word;
+}
+
+#content h1 { font-size: 2em; border-bottom: 1px solid var(--border-color, #d0d7de); padding-bottom: 0.3em; }
+#content h2 { font-size: 1.5em; border-bottom: 1px solid var(--border-color, #d0d7de); padding-bottom: 0.3em; }
+#content h3 { font-size: 1.25em; }
+#content h4 { font-size: 1em; }
+
+#content a { color: #0969da; }
+@media (prefers-color-scheme: dark) {
+  #content a { color: #58a6ff; }
+}
+
+#content code {
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.9em;
+  background: var(--code-bg, #f6f8fa);
+  border-radius: 4px;
+  padding: 0.15em 0.4em;
+}
+@media (prefers-color-scheme: dark) {
+  #content code { background: var(--code-bg, #262c36); }
+}
+
+#content pre {
+  background: var(--code-bg, #f6f8fa);
+  border-radius: 8px;
+  padding: 16px;
+  overflow-x: auto;
+}
+@media (prefers-color-scheme: dark) {
+  #content pre { background: var(--code-bg, #1e2430); }
+}
+
+#content pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+#content blockquote {
+  margin: 0;
+  padding: 0 1em;
+  color: #57606a;
+  border-left: 0.25em solid #d0d7de;
+}
+@media (prefers-color-scheme: dark) {
+  #content blockquote { color: #8b949e; border-left-color: #30363d; }
+}
+
+#content table {
+  border-collapse: collapse;
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
+#content th, #content td {
+  border: 1px solid #d0d7de;
+  padding: 6px 13px;
+}
+@media (prefers-color-scheme: dark) {
+  #content th, #content td { border-color: #30363d; }
+}
+
+#content img { max-width: 100%; }
+
+#content hr {
+  border: none;
+  border-top: 1px solid #d0d7de;
+}
+@media (prefers-color-scheme: dark) {
+  #content hr { border-top-color: #30363d; }
+}
+
+.empty, .error {
+  color: #57606a;
+  text-align: center;
+  margin-top: 40vh;
+}
+@media (prefers-color-scheme: dark) {
+  .empty, .error { color: #8b949e; }
+}
