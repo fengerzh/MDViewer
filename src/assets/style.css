@@ -97,3 +97,66 @@ body {
 @media (prefers-color-scheme: dark) {
   .empty, .error { color: #8b949e; }
 }
+
+/* 导出 PDF：Rust 侧导出前给 <html> 加 pdf-capture 类——
+   强制浅色、代码与表格折行不截断（createPDF 捕获屏幕媒体，@media print 不生效） */
+html.pdf-capture {
+  background: #fff !important;
+  color: #1f2328 !important;
+}
+
+html.pdf-capture #content {
+  max-width: none;
+  margin: 0;
+  /* 垂直留白由导出切片时的页边距提供，这里只保留左右边距 */
+  padding: 0 40px;
+}
+
+html.pdf-capture #content a { color: #0969da !important; }
+
+html.pdf-capture #content code {
+  color: inherit !important;
+  background: #f6f8fa !important;
+}
+
+html.pdf-capture #content pre {
+  background: #f6f8fa !important;
+  overflow: visible;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+html.pdf-capture #content blockquote {
+  color: #57606a !important;
+  border-left-color: #d0d7de !important;
+}
+
+html.pdf-capture #content table {
+  display: table;
+  table-layout: fixed;
+  width: 100%;
+  max-width: 100%;
+  overflow: visible;
+}
+html.pdf-capture #content th,
+html.pdf-capture #content td {
+  border-color: #d0d7de !important;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+html.pdf-capture #content hr { border-top-color: #d0d7de !important; }
+
+html.pdf-capture #content img { max-width: 100%; }
+
+html.pdf-capture #content h1,
+html.pdf-capture #content h2,
+html.pdf-capture #content h3,
+html.pdf-capture #content h4 {
+  break-after: avoid;
+}
+html.pdf-capture #content pre,
+html.pdf-capture #content table,
+html.pdf-capture #content blockquote {
+  break-inside: avoid;
+}

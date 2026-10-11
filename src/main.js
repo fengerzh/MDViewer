@@ -25,12 +25,45 @@ function renderHtml(md, path) {
     content.querySelectorAll('pre code').forEach((b) => {
       try { hljs.highlightElement(b); } catch (_) { /* 高亮失败不阻塞 */ }
     });
+    inlineImages(path);
   } catch (e) {
     dbg('renderHtml ERROR: ' + e.message + ' | stack=' + e.stack);
     content.innerHTML = '<p class="error">渲染错误：' + e.message + '</p>';
   }
   const name = path.split('/').pop();
   document.title = name ? name + ' - MDViewer' : 'MDViewer';
+}
+
+const IMG_MIME = {
+  png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif',
+  webp: 'image/webp', svg: 'image/svg+xml', bmp: 'image/bmp', avif: 'image/avif',
+  ico: 'image/x-icon', tif: 'image/tiff', tiff: 'image/tiff',
+};
+
+// 页面源是 tauri://localhost，Markdown 里的相对路径图片无法按文档目录解析（屏幕和导出 PDF 都会破图），
+// 这里把本地图片读成 base64 内联为 data URL
+async function inlineImages(path) {
+  const dir = path ? path.replace(/\/[^/]*$/, '') : '';
+  for (const img of content.querySelectorAll('img')) {
+    const raw = img.getAttribute('src') || '';
+    if (!raw || /^(https?:|data:)/i.test(raw)) continue;
+    let p = raw;
+    try { p = decodeURI(raw); } catch (_) { /* 保留原样再试 */ }
+    p = p.replace(/^file:\/\//, '');
+    if (!p.startsWith('/')) {
+      if (!dir) continue;
+      p = dir + '/' + p;
+    }
+    const ext = p.includes('.') ? p.split('.').pop().toLowerCase() : '';
+    const mime = IMG_MIME[ext];
+    if (!mime) continue;
+    try {
+      const b64 = await invoke('read_file_base64', { path: p });
+      if (b64) img.src = 'data:' + mime + ';base64,' + b64;
+    } catch (e) {
+      dbg('inlineImages fail: ' + p + ' ' + e);
+    }
+  }
 }
 
 async function openFile(path) {
