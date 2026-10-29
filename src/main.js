@@ -25,17 +25,22 @@ function clampZoom(z) {
 function layoutZoom() {
   if (!stage || !zoomSpacer) return;
   if (document.documentElement.classList.contains('pdf-capture')) return;
+  // 分页视图下内容宽度固定为 A4 纸宽，否则取 #content 的自适应宽度
+  const box = document.body.classList.contains('paged') ? document.getElementById('pages') : content;
   const vw = window.innerWidth;
-  const cw = content ? content.offsetWidth : stage.offsetWidth;
-  const left = content ? content.offsetLeft : 0;
+  const cw = box ? box.offsetWidth : stage.offsetWidth;
+  const left = box ? box.offsetLeft : 0;
   const visW = cw * zoom;
-  // 缩小后正文比视口窄：水平居中；放大溢出：保持左上原点，向右下方扩展以便滚动查看
-  const dx = visW <= vw ? Math.round((vw - visW) / 2 - left * zoom) : 0;
+  // 缩小后正文比视口窄：水平居中；放大溢出：纸张左边界贴住视口左侧（阅读区最大化，
+  // 行首仍在可视范围内）。分页纸堆 CSS 里已左对齐（left=0），故放大时无需再平移
+  const dx = visW <= vw
+    ? Math.round((vw - visW) / 2 - left * zoom)
+    : -Math.round(left * zoom);
   stage.style.transform = 'translateX(' + dx + 'px) scale(' + zoom + ')';
   // 纵向：补足放大后多出的视觉高度，保证能滚到文档末尾
   stage.style.marginBottom = Math.round(stage.offsetHeight * (zoom - 1)) + 'px';
   // 横向：只在内容真的溢出视口时撑开滚动宽度
-  zoomSpacer.style.width = (dx > 0 ? 0 : Math.max(0, Math.ceil((left + cw) * zoom))) + 'px';
+  zoomSpacer.style.width = (visW <= vw ? 0 : Math.ceil(cw * zoom)) + 'px';
 }
 
 function applyZoom(next) {
@@ -84,6 +89,130 @@ if (typeof ResizeObserver !== 'undefined' && stage) {
   layoutZoom();
 })();
 
+// ---- A4 分页视图 ---------------------------------------------------------
+// Markdown/HTML 是连续流，本身没有"页"的概念。这里做的是「块级分页」：
+// 把顶层块元素按一页的可用高度装箱，放不下就整块挪到下一页，绝不把段落/表格
+// 拆到两页——视觉上等同 Word 页面视图，代价是长段落或超长表格会整块换页（A 档取舍）。
+const pagesEl = document.getElementById('pages');
+const PAGE_W = 794;   // A4 210mm @96dpi
+const PAGE_H = 1123;  // A4 297mm @96dpi
+const PAGE_PAD = 60;  // 页边距，约 16mm
+const AVAIL_H = PAGE_H - PAGE_PAD * 2;
+// 标题掉到页尾会与正文分家，剩余空间不足这么多时就整块换页
+const ORPHAN_MIN = 96;
+let paginated = false;
+
+function newSheet() {
+  const page = document.createElement('div');
+  page.className = 'page';
+  const inner = document.createElement('div');
+  inner.className = 'doc page-inner';
+  // docx 专属样式在分页后由每页的 .page-inner 继续承载
+  if (content.classList.contains('docx-body')) inner.classList.add('docx-body');
+  const num = document.createElement('div');
+  num.className = 'page-num';
+  page.appendChild(inner);
+  page.appendChild(num);
+  pagesEl.appendChild(page);
+  return { page, inner, num };
+}
+
+// 把各页内容按原顺序搬回 #content，恢复成连续流（导出 PDF、空状态时用）
+function unpaginate() {
+  for (const page of Array.from(pagesEl.querySelectorAll('.page'))) {
+    const inner = page.querySelector('.page-inner');
+    while (inner.firstChild) content.appendChild(inner.firstChild);
+  }
+  pagesEl.textContent = '';
+  document.body.classList.remove('paged');
+  paginated = false;
+}
+
+// 空状态 / 错误提示不分页，直接铺满窗口居中显示
+function isPlaceholderOnly() {
+  const els = content.children;
+  if (els.length !== 1) return false;
+  const cls = els[0].className || '';
+  return els[0].tagName === 'P' && (cls.indexOf('empty') >= 0 || cls.indexOf('error') >= 0);
+}
+
+function paginate() {
+  if (document.documentElement.classList.contains('pdf-capture')) return;
+  const wasAtTop = window.scrollY < 8;
+  if (isPlaceholderOnly()) {
+    unpaginate();
+    layoutZoom();
+    return;
+  }
+  unpaginate();
+  const nodes = Array.from(content.childNodes);
+  if (!nodes.length) {
+    layoutZoom();
+    return;
+  }
+  document.body.classList.add('paged');
+  let cur = newSheet();
+  for (const node of nodes) {
+    cur.inner.appendChild(node);
+    const single = cur.inner.childNodes.length === 1;
+    // 本页装不下了：整块挪到新页（新页第一块不再回搬，避免死循环）
+    if (!single && cur.inner.scrollHeight > AVAIL_H + 1) {
+      cur.inner.removeChild(node);
+      cur = newSheet();
+      cur.inner.appendChild(node);
+    }
+    // 标题留在页尾：剩余空间连一段正文都放不下时，标题跟着换页
+    if (/^H[1-6]$/.test(node.nodeName) && cur.inner.childNodes.length > 1) {
+      if (AVAIL_H - cur.inner.scrollHeight < ORPHAN_MIN) {
+        cur.inner.removeChild(node);
+        cur = newSheet();
+        cur.inner.appendChild(node);
+      }
+    }
+    // 单块就超过一整页（长表格、长代码块）：这张纸拉长，宁可纸变长也不裁内容
+    if (cur.inner.childNodes.length === 1 && cur.inner.scrollHeight > AVAIL_H + 1) {
+      cur.page.classList.add('page--tall');
+    }
+  }
+  const sheets = pagesEl.querySelectorAll('.page');
+  sheets.forEach((p, i) => {
+    p.querySelector('.page-num').textContent = (i + 1) + ' / ' + sheets.length;
+  });
+  paginated = true;
+  if (wasAtTop) window.scrollTo(0, 0);
+  layoutZoom();
+  dbg('paginate => pages=' + sheets.length
+    + ' availH=' + AVAIL_H
+    + ' pageH=[' + Array.from(sheets).map((p) => p.offsetHeight).join(',') + ']'
+    + ' innerH=[' + Array.from(sheets).map((p) => p.querySelector('.page-inner').scrollHeight).join(',') + ']');
+}
+
+// 图片参与布局，必须等解码完再量高度，否则分页位置会偏
+async function waitImages() {
+  const imgs = Array.from(content.querySelectorAll('img'));
+  await Promise.all(imgs.map((img) => new Promise((res) => {
+    if (img.complete) { res(); return; }
+    img.addEventListener('load', res, { once: true });
+    img.addEventListener('error', res, { once: true });
+    setTimeout(res, 3000);  // 坏图不阻塞分页
+  })));
+}
+
+// 导出 PDF 时 Rust 侧给 <html> 加 pdf-capture 类并直接测量 #content 高度，
+// 所以捕获期间必须先还原成连续流，导出结束再重新分页
+new MutationObserver(() => {
+  const capturing = document.documentElement.classList.contains('pdf-capture');
+  if (capturing) {
+    if (paginated) {
+      pagedBeforeCapture = true;
+      unpaginate();
+    }
+  } else if (pagedBeforeCapture) {
+    pagedBeforeCapture = false;
+    paginate();
+  }
+}).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+
 function stripFrontMatter(md) {
   if (!md) return md;
   // 剥离文档开头的元数据块（YAML/TOML front matter，--- 或 +++ 包裹），不修改源文档
@@ -92,8 +221,17 @@ function stripFrontMatter(md) {
   return md;
 }
 
-function renderHtml(md, path) {
+// 换文档时直接丢弃旧纸页（里面的内容本来就是旧文档的，不需要搬回）
+function clearPages() {
+  pagesEl.textContent = '';
+  document.body.classList.remove('paged');
+  content.classList.remove('docx-body');
+  paginated = false;
+}
+
+async function renderHtml(md, path) {
   dbg('renderHtml enter, marked=' + typeof marked + ', mdLen=' + (md ? md.length : 0));
+  clearPages();
   try {
     const html = marked.parse(stripFrontMatter(md), { gfm: true, breaks: true });
     dbg('marked.parse ok, htmlLen=' + (html ? html.length : 0));
@@ -109,6 +247,8 @@ function renderHtml(md, path) {
   }
   const name = path.split('/').pop();
   document.title = name ? name + ' - MDViewer' : 'MDViewer';
+  await waitImages();
+  paginate();
 }
 
 const IMG_MIME = {
@@ -151,6 +291,7 @@ function extOf(path) {
 // docx 走 mammoth 语义转换：保留标题/段落/列表/表格/内嵌图片（转 data URL），不追求版式还原
 async function renderDocx(path) {
   dbg('renderDocx enter, mammoth=' + typeof mammoth);
+  clearPages();
   try {
     const b64 = await invoke('read_file_base64', { path });
     dbg('docx read ok, b64Len=' + (b64 ? b64.length : 0));
@@ -158,7 +299,10 @@ async function renderDocx(path) {
     const bytes = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
     const res = await mammoth.convertToHtml({ arrayBuffer: bytes.buffer });
-    content.innerHTML = '<div class="docx-body">' + res.value + '</div>';
+    // 不套 wrapper：直接把 mammoth 输出的多个块级元素铺进 #content，
+    // 分页时才能逐块装页；docx 专属样式靠 #content 上的 docx-body 类承载
+    content.classList.add('docx-body');
+    content.innerHTML = res.value || '<p class="empty">空文档</p>';
     if (res.messages && res.messages.length) {
       const warn = res.messages.map((m) => m.message).join(' | ');
       dbg('docx warnings(' + res.messages.length + '): ' + warn.slice(0, 800));
@@ -170,12 +314,16 @@ async function renderDocx(path) {
   }
   const name = path.split('/').pop();
   document.title = name ? name + ' - MDViewer' : 'MDViewer';
+  await waitImages();
+  paginate();
 }
 
 async function openFile(path) {
   if (!path) {
+    content.classList.remove('docx-body');
     content.innerHTML = '<p class="empty">没有打开的文件</p>';
     document.title = 'MDViewer';
+    paginate();
     return;
   }
   if (extOf(path) === 'docx') {
@@ -185,9 +333,10 @@ async function openFile(path) {
   try {
     const md = await invoke('read_md_file', { path });
     dbg('read_md_file ok, path=' + path);
-    renderHtml(md, path);
+    await renderHtml(md, path);
   } catch (e) {
     content.innerHTML = '<p class="error">读取失败：' + e + '</p>';
+    paginate();
   }
 }
 

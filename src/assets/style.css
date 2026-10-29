@@ -11,11 +11,16 @@ body {
   font-size: 16px;
 }
 
+/* .doc 是「文档内容」的排版作用域：未分页时是 #content，分页后是每页的 .page-inner，
+   两处共用同一套标题/表格/代码样式，保证分页前后视觉一致 */
+.doc {
+  overflow-wrap: break-word;
+}
+
 #content {
   max-width: 860px;
   margin: 0 auto;
   padding: 32px 40px 64px;
-  overflow-wrap: break-word;
 }
 
 /* 视口缩放（Cmd +/-）：只对渲染结果做视觉变换，不改逻辑宽度，
@@ -30,17 +35,17 @@ body {
   height: 0;
 }
 
-#content h1 { font-size: 2em; border-bottom: 1px solid var(--border-color, #d0d7de); padding-bottom: 0.3em; }
-#content h2 { font-size: 1.5em; border-bottom: 1px solid var(--border-color, #d0d7de); padding-bottom: 0.3em; }
-#content h3 { font-size: 1.25em; }
-#content h4 { font-size: 1em; }
+.doc h1 { font-size: 2em; border-bottom: 1px solid var(--border-color, #d0d7de); padding-bottom: 0.3em; }
+.doc h2 { font-size: 1.5em; border-bottom: 1px solid var(--border-color, #d0d7de); padding-bottom: 0.3em; }
+.doc h3 { font-size: 1.25em; }
+.doc h4 { font-size: 1em; }
 
-#content a { color: #0969da; }
+.doc a { color: #0969da; }
 @media (prefers-color-scheme: dark) {
-  #content a { color: #58a6ff; }
+  .doc a { color: #58a6ff; }
 }
 
-#content code {
+.doc code {
   font-family: "SF Mono", Menlo, Consolas, monospace;
   font-size: 0.9em;
   background: var(--code-bg, #f6f8fa);
@@ -48,57 +53,57 @@ body {
   padding: 0.15em 0.4em;
 }
 @media (prefers-color-scheme: dark) {
-  #content code { background: var(--code-bg, #262c36); }
+  .doc code { background: var(--code-bg, #262c36); }
 }
 
-#content pre {
+.doc pre {
   background: var(--code-bg, #f6f8fa);
   border-radius: 8px;
   padding: 16px;
   overflow-x: auto;
 }
 @media (prefers-color-scheme: dark) {
-  #content pre { background: var(--code-bg, #1e2430); }
+  .doc pre { background: var(--code-bg, #1e2430); }
 }
 
-#content pre code {
+.doc pre code {
   background: none;
   padding: 0;
   border-radius: 0;
 }
 
-#content blockquote {
+.doc blockquote {
   margin: 0;
   padding: 0 1em;
   color: #57606a;
   border-left: 0.25em solid #d0d7de;
 }
 @media (prefers-color-scheme: dark) {
-  #content blockquote { color: #8b949e; border-left-color: #30363d; }
+  .doc blockquote { color: #8b949e; border-left-color: #30363d; }
 }
 
-#content table {
+.doc table {
   border-collapse: collapse;
   display: block;
   max-width: 100%;
   overflow-x: auto;
 }
-#content th, #content td {
+.doc th, .doc td {
   border: 1px solid #d0d7de;
   padding: 6px 13px;
 }
 @media (prefers-color-scheme: dark) {
-  #content th, #content td { border-color: #30363d; }
+  .doc th, .doc td { border-color: #30363d; }
 }
 
-#content img { max-width: 100%; }
+.doc img { max-width: 100%; }
 
-#content hr {
+.doc hr {
   border: none;
   border-top: 1px solid #d0d7de;
 }
 @media (prefers-color-scheme: dark) {
-  #content hr { border-top-color: #30363d; }
+  .doc hr { border-top-color: #30363d; }
 }
 
 .empty, .error {
@@ -111,17 +116,17 @@ body {
 }
 
 /* docx（mammoth 语义转换）渲染样式：只保证结构清晰，不还原 Word 版式 */
-#content .docx-body p { margin: 0 0 0.75em; }
-#content .docx-body img {
+.docx-body p { margin: 0 0 0.75em; }
+.docx-body img {
   display: block;
   max-width: 100%;
   height: auto;
   margin: 12px auto;
 }
-#content .docx-body th,
-#content .docx-body td { vertical-align: top; }
-#content .docx-body ul,
-#content .docx-body ol { padding-left: 1.8em; }
+.docx-body th,
+.docx-body td { vertical-align: top; }
+.docx-body ul,
+.docx-body ol { padding-left: 1.8em; }
 
 /* 导出 PDF：Rust 侧导出前给 <html> 加 pdf-capture 类——
    强制浅色、代码与表格折行不截断（createPDF 捕获屏幕媒体，@media print 不生效） */
@@ -130,14 +135,14 @@ html.pdf-capture {
   color: #1f2328 !important;
 }
 
-html.pdf-capture #content {
+html.pdf-capture .doc {
   max-width: none;
   margin: 0;
   /* 垂直留白由导出切片时的页边距提供，这里只保留左右边距 */
   padding: 0 40px;
 }
 
-html.pdf-capture #content a { color: #0969da !important; }
+html.pdf-capture .doc a { color: #0969da !important; }
 
 /* 导出时临时取消视口缩放，保证 Rust 侧用 scrollHeight / getBoundingClientRect
    量到的分页高度是 100% 布局下的真实值 */
@@ -150,49 +155,120 @@ html.pdf-capture #zoom-spacer {
   width: 0 !important;
 }
 
-html.pdf-capture #content code {
+html.pdf-capture .doc code {
   color: inherit !important;
   background: #f6f8fa !important;
 }
 
-html.pdf-capture #content pre {
+html.pdf-capture .doc pre {
   background: #f6f8fa !important;
   overflow: visible;
   white-space: pre-wrap;
   word-break: break-word;
 }
 
-html.pdf-capture #content blockquote {
+html.pdf-capture .doc blockquote {
   color: #57606a !important;
   border-left-color: #d0d7de !important;
 }
 
-html.pdf-capture #content table {
+html.pdf-capture .doc table {
   display: table;
   table-layout: fixed;
   width: 100%;
   max-width: 100%;
   overflow: visible;
 }
-html.pdf-capture #content th,
-html.pdf-capture #content td {
+html.pdf-capture .doc th,
+html.pdf-capture .doc td {
   border-color: #d0d7de !important;
   word-break: break-word;
   overflow-wrap: anywhere;
 }
 
-html.pdf-capture #content hr { border-top-color: #d0d7de !important; }
+html.pdf-capture .doc hr { border-top-color: #d0d7de !important; }
 
-html.pdf-capture #content img { max-width: 100%; }
+html.pdf-capture .doc img { max-width: 100%; }
 
-html.pdf-capture #content h1,
-html.pdf-capture #content h2,
-html.pdf-capture #content h3,
-html.pdf-capture #content h4 {
+html.pdf-capture .doc h1,
+html.pdf-capture .doc h2,
+html.pdf-capture .doc h3,
+html.pdf-capture .doc h4 {
   break-after: avoid;
 }
-html.pdf-capture #content pre,
-html.pdf-capture #content table,
-html.pdf-capture #content blockquote {
+html.pdf-capture .doc pre,
+html.pdf-capture .doc table,
+html.pdf-capture .doc blockquote {
   break-inside: avoid;
 }
+
+/* ---------- A4 分页视图（Word 页面视图风格） ---------- */
+:root {
+  --page-bg: #ffffff;
+  --desk-bg: #e8eaee;
+  --page-shadow: 0 1px 2px rgba(0, 0, 0, .10), 0 10px 28px rgba(0, 0, 0, .10);
+  --page-num: #9aa0a6;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page-bg: #1b212b;
+    --desk-bg: #0b0e13;
+    --page-shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 10px 28px rgba(0, 0, 0, .45);
+    --page-num: #6e7681;
+  }
+}
+
+body.paged { background: var(--desk-bg); }
+
+#pages {
+  /* 纸堆左对齐：水平居中交给 JS（layoutZoom）处理，这样放大时纸张左边界天然贴住
+     视口左侧，不会因为 margin auto 留出一大条灰边 */
+  width: 794px;
+  margin: 0;
+  padding: 24px 0 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+}
+
+.page {
+  position: relative;
+  width: 794px;
+  height: 1123px;
+  flex: none;
+  background: var(--page-bg);
+  box-shadow: var(--page-shadow);
+  overflow: hidden;
+}
+/* 单个块超过一整页（长表格/长代码块）时把纸拉长，宁可纸变长也不裁内容 */
+.page--tall { height: auto; }
+
+.doc.page-inner {
+  position: relative;
+  /* 高度必须由内容决定：JS 靠 scrollHeight 判断本页装没装满，
+     若写死 height，每页都会被判成「已溢出」，导致每块内容单独占一页 */
+  height: auto;
+  padding: 60px;
+  /* 建 BFC：让子元素 margin 留在页内，scrollHeight 才能准确反映内容高度 */
+  display: flow-root;
+}
+
+.page-num {
+  position: absolute;
+  right: 60px;
+  bottom: 22px;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--page-num);
+  user-select: none;
+}
+
+/* 分页后隐藏原容器；未分页（空状态/导出中）隐藏纸堆 */
+body.paged #content { display: none; }
+body:not(.paged) #pages { display: none; }
+
+/* 导出 PDF 时 Rust 侧测量的是 #content 连续流，纸堆必须让位 */
+html.pdf-capture #pages { display: none !important; }
+html.pdf-capture body.paged #content { display: block !important; }
+
