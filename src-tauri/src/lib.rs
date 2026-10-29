@@ -59,7 +59,7 @@ fn looks_like_md(p: &std::path::Path) -> bool {
             .and_then(|e| e.to_str())
             .map(|e| e.to_ascii_lowercase())
             .as_deref(),
-        Some("md") | Some("markdown")
+        Some("md") | Some("markdown") | Some("docx")
     )
 }
 
@@ -472,7 +472,15 @@ fn setup_menu(app: &tauri::AppHandle) -> tauri::Result<()> {
     let menu = Menu::default(app)?;
     let export =
         MenuItem::with_id(app, "export-pdf", "导出为 PDF…", true, Some("CmdOrControl+Shift+S"))?;
+
+    // 「View」菜单承载视口缩放（只做视觉缩放，不改排版）
+    let zoom_in = MenuItem::with_id(app, "zoom-in", "放大", true, Some("CmdOrControl+="))?;
+    let zoom_out = MenuItem::with_id(app, "zoom-out", "缩小", true, Some("CmdOrControl+-"))?;
+    let zoom_reset = MenuItem::with_id(app, "zoom-reset", "实际大小", true, Some("CmdOrControl+0"))?;
+    let zoom_sep = tauri::menu::PredefinedMenuItem::separator(app)?;
+
     let mut inserted = false;
+    let mut zoom_inserted = false;
     for item in menu.items()? {
         if let MenuItemKind::Submenu(s) = &item {
             let title = s.text().unwrap_or_default();
@@ -480,11 +488,18 @@ fn setup_menu(app: &tauri::AppHandle) -> tauri::Result<()> {
             if title.trim() == "File" {
                 s.insert(&export, 0)?;
                 inserted = true;
-                break;
+            } else if title.trim() == "View" {
+                s.insert(&zoom_in, 0)?;
+                s.insert(&zoom_out, 1)?;
+                s.insert(&zoom_sep, 2)?;
+                s.insert(&zoom_reset, 3)?;
+                zoom_inserted = true;
             }
         }
     }
-    log_line(&format!("[setup_menu] export item inserted={inserted}"));
+    log_line(&format!(
+        "[setup_menu] export inserted={inserted}, zoom inserted={zoom_inserted}"
+    ));
     app.set_menu(menu)?;
     Ok(())
 }
@@ -530,8 +545,19 @@ pub fn run() {
         })
         .on_menu_event(|app, event| {
             #[cfg(target_os = "macos")]
-            if event.id().as_ref() == "export-pdf" {
-                start_export(app.clone(), None);
+            {
+                let id = event.id().as_ref();
+                if id == "export-pdf" {
+                    start_export(app.clone(), None);
+                } else if id == "zoom-in" || id == "zoom-out" || id == "zoom-reset" {
+                    let action = match id {
+                        "zoom-in" => "in",
+                        "zoom-out" => "out",
+                        _ => "reset",
+                    };
+                    let ok = app.emit("zoom", action);
+                    log_line(&format!("[menu] zoom {action} emit ok={ok:?}"));
+                }
             }
         })
         .invoke_handler(tauri::generate_handler![

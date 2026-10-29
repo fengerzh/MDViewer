@@ -18,6 +18,18 @@ body {
   overflow-wrap: break-word;
 }
 
+/* 视口缩放（Cmd +/-）：只对渲染结果做视觉变换，不改逻辑宽度，
+   因此正文字号变大而排版（换行、表格列宽）完全不变。
+   放大后靠 JS 给 #stage 补 margin-bottom、给 #zoom-spacer 撑宽度来扩展滚动区。 */
+#stage {
+  transform-origin: 0 0;
+  transform: scale(var(--zoom, 1));
+}
+
+#zoom-spacer {
+  height: 0;
+}
+
 #content h1 { font-size: 2em; border-bottom: 1px solid var(--border-color, #d0d7de); padding-bottom: 0.3em; }
 #content h2 { font-size: 1.5em; border-bottom: 1px solid var(--border-color, #d0d7de); padding-bottom: 0.3em; }
 #content h3 { font-size: 1.25em; }
@@ -98,6 +110,19 @@ body {
   .empty, .error { color: #8b949e; }
 }
 
+/* docx（mammoth 语义转换）渲染样式：只保证结构清晰，不还原 Word 版式 */
+#content .docx-body p { margin: 0 0 0.75em; }
+#content .docx-body img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 12px auto;
+}
+#content .docx-body th,
+#content .docx-body td { vertical-align: top; }
+#content .docx-body ul,
+#content .docx-body ol { padding-left: 1.8em; }
+
 /* 导出 PDF：Rust 侧导出前给 <html> 加 pdf-capture 类——
    强制浅色、代码与表格折行不截断（createPDF 捕获屏幕媒体，@media print 不生效） */
 html.pdf-capture {
@@ -113,6 +138,17 @@ html.pdf-capture #content {
 }
 
 html.pdf-capture #content a { color: #0969da !important; }
+
+/* 导出时临时取消视口缩放，保证 Rust 侧用 scrollHeight / getBoundingClientRect
+   量到的分页高度是 100% 布局下的真实值 */
+html.pdf-capture #stage {
+  transform: none !important;
+  margin-bottom: 0 !important;
+}
+
+html.pdf-capture #zoom-spacer {
+  width: 0 !important;
+}
 
 html.pdf-capture #content code {
   color: inherit !important;
