@@ -1,7 +1,7 @@
 [package]
 name = "mdviewer"
-version = "0.2.0"
-description = "极简 Markdown 查看器"
+version = "0.3.0"
+description = "极简 Markdown / Word 查看器"
 authors = ["zhangjing"]
 edition = "2021"
 
